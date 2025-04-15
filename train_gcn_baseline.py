@@ -88,7 +88,7 @@ if __name__ == '__main__':
         description='ml_gcn_baseline',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--bakcbone', type=str, default='gcn')
+    parser.add_argument('--backbone', type=str, default='gcn')
     parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
     parser.add_argument('--emb_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.001)
