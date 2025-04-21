@@ -141,13 +141,13 @@ def set_seed(seed):
 
 
 def evaluate_pretrained(n_users, n_items, train_u2i, test_u2i, u_sens, args):
-    if (args.preload_path is None):
-        print('Preload path not set')
+    if (args.pretrain_path is None):
+        print('pretrain path not set')
         return
 
     with torch.no_grad():
         try:
-            fair_ib = torch.load(args.preload_path)
+            fair_ib = torch.load(args.pretrain_path)
         except Exception as e:
             print(e)
             return;

@@ -7,14 +7,29 @@ import numpy as np
 import multiprocessing as mp
 from .metric import *
 
+def compute_precision_at_k(topk_items, test_u2i, k):
+    precisions = []
+    for user_id, rec_items in enumerate(topk_items):
+        rec_k = rec_items[:k]
+        true_items = set(test_u2i.get(user_id, []))
+        if not true_items:
+            continue
+        hit_count = sum(1 for item in rec_k if item in true_items)
+        precisions.append(hit_count / k)
+    return np.mean(precisions) if precisions else 0.0
 
 def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, sens=None, indicators='[\'ndcg\', '
-                                                                                                      '\'recall\']',
+                                                                                                      '\'recall\','
+                                                                                                      '\'precision\']',
                      topks='[10, 20, 30]', num_workers=4):
     indicators = eval(indicators)
     topks = eval(topks)
     scores = np.matmul(user_emb, item_emb.T)
-    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num_workers)
+
+    # usuniecie precision z eval_accelerate
+    indicators_no_prec = [ind for ind in indicators if ind != 'precision']
+
+    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators_no_prec, topks, num_workers)
     perf_info = np.mean(perf_info, axis=0)
 
     res = {}
@@ -23,20 +38,28 @@ def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, 
         for topk in topks:
             res[ind + '@' + str(topk)] = perf_info[k]
             k = k + 1
+
+    # ręczne obliczenie precision@k
+    if 'precision' in indicators:
+        for topk in topks:
+            res['precision@' + str(topk)] = compute_precision_at_k(topk_items, test_u2i, topk)
 
     if sens is not None:
         for topk in topks:
-            res['js_dp@' + str(topk)], res['js_eo@' + str(topk)] = js_topk(topk_items, sens,test_u2i,n_users, n_items, topk)
+            res['js_dp@' + str(topk)], res['js_eo@' + str(topk)] = js_topk(topk_items, sens, test_u2i, n_users, n_items, topk)
     return res
 
 
-def ranking_age_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, sens=None,sens_age=None,sens_age6=None, indicators='[\'ndcg\', '
-                                                                                                      '\'recall\']',
+def ranking_age_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, sens=None, sens_age=None, sens_age6=None, indicators='[\'ndcg\', '
+                                                                                                      '\'recall\', \'precision\']',
                      topks='[10, 20, 30]', num_workers=4):
     indicators = eval(indicators)
     topks = eval(topks)
     scores = np.matmul(user_emb, item_emb.T)
-    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num_workers)
+
+    indicators_no_prec = [ind for ind in indicators if ind != 'precision']
+
+    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators_no_prec, topks, num_workers)
     perf_info = np.mean(perf_info, axis=0)
 
     res = {}
@@ -45,6 +68,10 @@ def ranking_age_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u
         for topk in topks:
             res[ind + '@' + str(topk)] = perf_info[k]
             k = k + 1
+
+    if 'precision' in indicators:
+        for topk in topks:
+            res['precision@' + str(topk)] = compute_precision_at_k(topk_items, test_u2i, topk)
 
     if sens is not None:
         for topk in topks:

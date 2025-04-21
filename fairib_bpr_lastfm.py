@@ -27,8 +27,8 @@ if __name__ == '__main__':
 
     args = parse_input_args('lastfm_bpr_fairib',backbone='gcn', dataset='lastfm-360k',
                             n_layers=0, batch_size=4096, log_path='logs/ib_bpr_fm_',
-                            param_path='param/ib_bpr_item_fm_', pretrain_path='param/bpr_base.pth',
-                            num_epochs=1000, device='cuda:1', beta=2, gamma=1, sigma=0.4)
+                            param_path='param/ib_bpr_item_fm_', pretrain_path=None,
+                            num_epochs=1000, device='cpu', beta=2, gamma=1, sigma=0.4)
 
     init_from_arguments(args)
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     u_sens = user_side_features['gender'].astype(np.int32)
 
     if args.pretrain_path is not None and args.pretrain_path != '':
-        evaluate_pretrained(n_users, n_items, train_u2i, test_u2i, u_sens)
+        evaluate_pretrained(n_users, n_items, train_u2i, test_u2i, u_sens, args)
         exit()
 
 

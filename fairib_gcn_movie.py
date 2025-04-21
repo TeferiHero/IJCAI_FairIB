@@ -162,7 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_path', type=str, default='logs/ib_gcn_movie_')
     parser.add_argument('--param_path', type=str, default='param/fairib_lightgcn_')
     parser.add_argument('--num_epochs', type=int, default=500)
-    parser.add_argument('--device', type=str, default='cuda:1')
+    parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--beta', type=float, default=40)
     parser.add_argument('--gamma', type=float, default=10)
     parser.add_argument('--sigma', type=float, default=0.3, help='gaosi kernel parameter')

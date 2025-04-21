@@ -1,4 +1,3 @@
-
 import argparse
 
 import torch
@@ -160,7 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_path', type=str, default='logs/ib_gcn_fm_')
     parser.add_argument('--param_path', type=str, default='param/ib_gcn_fm_')
     parser.add_argument('--num_epochs', type=int, default=1000)
-    parser.add_argument('--device', type=str, default='cuda:0')
+    parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--beta', type=float, default=2)
     parser.add_argument('--gamma', type=float, default=1)
     parser.add_argument('--sigma', type=float, default=0.35, help='gaosi kernel parameter')
