@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="IJCAI_FairIB" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.10" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (IJCAI_FairIB)" project-jdk-type="Python SDK" />
 </project>

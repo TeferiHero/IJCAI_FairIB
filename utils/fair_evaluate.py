@@ -1,5 +1,5 @@
 
-
+import sys
 import pdb
 import math
 import torch
@@ -27,9 +27,10 @@ def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, 
     scores = np.matmul(user_emb, item_emb.T)
 
     # usuniecie precision z eval_accelerate
-    indicators_no_prec = [ind for ind in indicators if ind != 'precision']
+    # indicators_no_prec = [ind for ind in indicators if ind != 'precision']
 
-    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators_no_prec, topks, num_workers)
+    perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num_workers)
+    # perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators_no_prec, topks, num_workers)
     perf_info = np.mean(perf_info, axis=0)
 
     res = {}
@@ -40,9 +41,15 @@ def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, 
             k = k + 1
 
     # ręczne obliczenie precision@k
-    if 'precision' in indicators:
+    # if 'precision' in indicators:
+    #     for topk in topks:
+    #         res['precision@' + str(topk)] = compute_precision_at_k(topk_items, test_u2i, topk)
+
+    if 'precision' in indicators and 'recall' in indicators:
         for topk in topks:
-            res['precision@' + str(topk)] = compute_precision_at_k(topk_items, test_u2i, topk)
+            precision = res['precision@' + str(topk)]
+            recall = res['recall@' + str(topk)]
+            res['f1@' + str(topk)] = 2 * precision * recall / (precision + recall)
 
     if sens is not None:
         for topk in topks:
@@ -96,9 +103,17 @@ def eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num
 
     test_parameters = zip(test_user_set, )
 
-    with mp.Pool(processes=num_workers, initializer=_init_global,
-                 initargs=(scores, train_u2i, test_u2i, indicators, topks,)) as pool:
-        res = pool.map(test_one_perf, test_parameters)
+    if sys.platform.startswith('win32'):
+        print("windows")
+        res = []
+        _init_global(scores, train_u2i, test_u2i, indicators, topks)
+        for param in test_parameters:
+            one_result = test_one_perf(param)
+            res.append(one_result)
+    else:
+        with mp.Pool(processes=num_workers, initializer=_init_global,
+                     initargs=(scores, train_u2i, test_u2i, indicators, topks,)) as pool:
+            res = pool.map(test_one_perf, test_parameters)
 
     for i, one in enumerate(res):
         perf_info[i] = one[0]

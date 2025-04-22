@@ -20,6 +20,15 @@ def recall(ranked_list, ground_list):
     return rec
 
 
+def precision(ranked_list, ground_list):
+    hits = 0
+    for i in range(len(ranked_list)):
+        id = ranked_list[i]
+        if id in ground_list:
+            hits += 1
+    prec = hits / (1.0 * len(ranked_list))
+    return prec
+
 def ndcg(ranked_list, ground_truth):
     dcg = 0
     idcg = IDCG(len(ground_truth))

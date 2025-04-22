@@ -158,8 +158,12 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=6)
     parser.add_argument('--log_path', type=str, default='logs/ib_gcn_fm_')
     parser.add_argument('--param_path', type=str, default='param/ib_gcn_fm_')
-    parser.add_argument('--num_epochs', type=int, default=1000)
-    parser.add_argument('--device', type=str, default='cpu')
+    parser.add_argument('--num_epochs', type=int, default=100)
+    if sys.platform.startswith("win32"):
+        parser.add_argument('--device', type=str, default='cuda:0')
+    else:
+        parser.add_argument('--device', type=str, default='cpu')
+
     parser.add_argument('--beta', type=float, default=2)
     parser.add_argument('--gamma', type=float, default=1)
     parser.add_argument('--sigma', type=float, default=0.35, help='gaosi kernel parameter')
@@ -198,7 +202,7 @@ if __name__ == '__main__':
     sens_enc = SemiGCN(n_users, n_items, norm_adj,
                        args.emb_size, args.n_layers, args.device,
                        nb_classes=np.unique(u_sens).shape[0])
-    train_semigcn(sens_enc, u_sens, n_users, device=args.device)
+    train_semigcn(sens_enc, u_sens, n_users,num_epochs=args.num_epochs, device=args.device)
 
     
     fair_ib = FairIB_LightGCN(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
