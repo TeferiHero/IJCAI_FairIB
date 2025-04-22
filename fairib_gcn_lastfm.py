@@ -161,6 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', type=int, default=100)
     if sys.platform.startswith("win32"):
         parser.add_argument('--device', type=str, default='cuda:0')
+        # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
     else:
         parser.add_argument('--device', type=str, default='cpu')
 

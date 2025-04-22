@@ -20,6 +20,7 @@ def compute_precision_at_k(topk_items, test_u2i, k):
 
 def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, sens=None, indicators='[\'ndcg\', '
                                                                                                       '\'recall\','
+                                                                                                      '\'mrr\','
                                                                                                       '\'precision\']',
                      topks='[10, 20, 30]', num_workers=4):
     indicators = eval(indicators)

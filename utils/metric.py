@@ -10,6 +10,15 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 
+
+def mrr(ranked_list, ground_list):
+    for i in range(len(ranked_list)):
+        id = ranked_list[i]
+        if id in ground_list:
+            return 1 / (1.0 * (i+1))
+    return 0
+
+
 def recall(ranked_list, ground_list):
     hits = 0
     for i in range(len(ranked_list)):
