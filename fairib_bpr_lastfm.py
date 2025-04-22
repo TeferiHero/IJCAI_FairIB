@@ -24,11 +24,19 @@ import pdb
 import sys
 
 if __name__ == '__main__':
+    if sys.platform.startswith("win32"):
+        print("windows")
+        args = parse_input_args('lastfm_bpr_fairib', backbone='gcn', dataset='lastfm-360k',
+                                n_layers=0, batch_size=4096, log_path='logs/ib_bpr_fm_',
+                                param_path='param/ib_bpr_item_fm_', pretrain_path=None,
+                                num_epochs=100, device='cuda:0', beta=2, gamma=1, sigma=0.4)
+        # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+    else:
+        args = parse_input_args('lastfm_bpr_fairib', backbone='gcn', dataset='lastfm-360k',
+                                n_layers=0, batch_size=4096, log_path='logs/ib_bpr_fm_',
+                                param_path='param/ib_bpr_item_fm_', pretrain_path=None,
+                                num_epochs=100, device='cpu', beta=2, gamma=1, sigma=0.4)
 
-    args = parse_input_args('lastfm_bpr_fairib',backbone='gcn', dataset='lastfm-360k',
-                            n_layers=0, batch_size=4096, log_path='logs/ib_bpr_fm_',
-                            param_path='param/ib_bpr_item_fm_', pretrain_path=None,
-                            num_epochs=1000, device='cpu', beta=2, gamma=1, sigma=0.4)
 
     init_from_arguments(args)
 

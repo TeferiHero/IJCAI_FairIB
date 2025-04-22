@@ -105,7 +105,6 @@ def eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num
     test_parameters = zip(test_user_set, )
 
     if sys.platform.startswith('win32'):
-        print("windows")
         res = []
         _init_global(scores, train_u2i, test_u2i, indicators, topks)
         for param in test_parameters:

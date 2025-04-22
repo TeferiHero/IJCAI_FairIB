@@ -165,8 +165,13 @@ if __name__ == '__main__':
     parser.add_argument('--log_path', type=str, default='logs/ib_bpr_movie_')
     parser.add_argument('--param_path', type=str, default='param/ib_bpr_item_movie_')
     parser.add_argument('--pretrain_path', type=str, default='param/_base.pth')
-    parser.add_argument('--num_epochs', type=int, default=500)
-    parser.add_argument('--device', type=str, default='cuda:0')
+    parser.add_argument('--num_epochs', type=int, default=100)
+    if sys.platform.startswith("win32"):
+        print("windows")
+        parser.add_argument('--device', type=str, default='cuda:0')
+        # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+    else:
+        parser.add_argument('--device', type=str, default='cpu')
     parser.add_argument('--beta', type=float, default=40)
     parser.add_argument('--gamma', type=float, default=10)
     parser.add_argument('--sigma', type=float, default=0.3, help='gaosi kernel parameter')

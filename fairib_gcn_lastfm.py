@@ -160,6 +160,7 @@ if __name__ == '__main__':
     parser.add_argument('--param_path', type=str, default='param/ib_gcn_fm_')
     parser.add_argument('--num_epochs', type=int, default=100)
     if sys.platform.startswith("win32"):
+        print("windows")
         parser.add_argument('--device', type=str, default='cuda:0')
         # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
     else:
@@ -203,7 +204,7 @@ if __name__ == '__main__':
     sens_enc = SemiGCN(n_users, n_items, norm_adj,
                        args.emb_size, args.n_layers, args.device,
                        nb_classes=np.unique(u_sens).shape[0])
-    train_semigcn(sens_enc, u_sens, n_users,num_epochs=args.num_epochs, device=args.device)
+    train_semigcn(sens_enc, u_sens, n_users, device=args.device)
 
     
     fair_ib = FairIB_LightGCN(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
