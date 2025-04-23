@@ -148,70 +148,74 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 if __name__ == '__main__':
+    try:
+        parser = argparse.ArgumentParser(
+            description='ml_bpr_fairib',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser = argparse.ArgumentParser(
-        description='ml_bpr_fairib',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('--backbone', type=str, default='gcn')
+        parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
+        parser.add_argument('--emb_size', type=int, default=64)
+        parser.add_argument('--hidden_size', type=int, default=256)
+        parser.add_argument('--lr', type=float, default=0.001)
+        parser.add_argument('--l2_reg', type=float, default=0.001)
+        parser.add_argument('--n_layers', type=int, default=0)
+        parser.add_argument('--batch_size', type=int, default=2048)
+        parser.add_argument('--num_workers', type=int, default=6)
+        parser.add_argument('--log_path', type=str, default='logs/ib_bpr_movie_')
+        parser.add_argument('--param_path', type=str, default='param/ib_bpr_item_movie_')
+        parser.add_argument('--pretrain_path', type=str, default='param/_base.pth')
+        parser.add_argument('--num_epochs', type=int, default=100)
+        if sys.platform.startswith("win32"):
+            print("windows")
+            parser.add_argument('--device', type=str, default='cuda:0')
+            # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+        else:
+            parser.add_argument('--device', type=str, default='cpu')
+        parser.add_argument('--beta', type=float, default=40)
+        parser.add_argument('--gamma', type=float, default=10)
+        parser.add_argument('--sigma', type=float, default=0.3, help='gaosi kernel parameter')
+        parser.add_argument("--seed", default=2023, type=int)
 
-    parser.add_argument('--backbone', type=str, default='gcn')
-    parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
-    parser.add_argument('--emb_size', type=int, default=64)
-    parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--l2_reg', type=float, default=0.001)
-    parser.add_argument('--n_layers', type=int, default=0)
-    parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--num_workers', type=int, default=6)
-    parser.add_argument('--log_path', type=str, default='logs/ib_bpr_movie_')
-    parser.add_argument('--param_path', type=str, default='param/ib_bpr_item_movie_')
-    parser.add_argument('--pretrain_path', type=str, default='param/_base.pth')
-    parser.add_argument('--num_epochs', type=int, default=100)
-    if sys.platform.startswith("win32"):
-        print("windows")
-        parser.add_argument('--device', type=str, default='cuda:0')
-        # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-    else:
-        parser.add_argument('--device', type=str, default='cpu')
-    parser.add_argument('--beta', type=float, default=40)
-    parser.add_argument('--gamma', type=float, default=10)
-    parser.add_argument('--sigma', type=float, default=0.3, help='gaosi kernel parameter')
-    parser.add_argument("--seed", default=2023, type=int)
+        args = parser.parse_args()
 
-    args = parser.parse_args()
+        set_seed(seed=args.seed)
 
-    set_seed(seed=args.seed)
+        a = datetime.datetime.now()
+        time_str = datetime.datetime.strftime(a, "%m-%d %H%M")
+        pre_dex = "beta=" + str(args.beta) + "_gamma=" + str(args.gamma)+ "_sigma=" + str(args.sigma)
+        args.log_path = args.log_path + pre_dex + " " + time_str + ".txt"
+        sys.stdout = Logger(args.log_path)
+        args.param_path = args.param_path + pre_dex + " " + time_str + ".pth"
+        print(args)
 
-    a = datetime.datetime.now()
-    time_str = datetime.datetime.strftime(a, "%m-%d %H%M")
-    pre_dex = "beta=" + str(args.beta) + "_gamma=" + str(args.gamma)+ "_sigma=" + str(args.sigma)
-    args.log_path = args.log_path + pre_dex + " " + time_str + ".txt"
-    sys.stdout = Logger(args.log_path)
-    args.param_path = args.param_path + pre_dex + " " + time_str + ".pth"
-    print(args)
+        with open(args.dataset, 'rb') as f:
+            train_u2i = pickle.load(f)
+            train_i2u = pickle.load(f)
+            test_u2i = pickle.load(f)
+            test_i2u = pickle.load(f)
+            train_set = pickle.load(f)
+            test_set = pickle.load(f)
+            user_side_features = pickle.load(f)
+            n_users, n_items = pickle.load(f)
 
-    with open(args.dataset, 'rb') as f:
-        train_u2i = pickle.load(f)
-        train_i2u = pickle.load(f)
-        test_u2i = pickle.load(f)
-        test_i2u = pickle.load(f)
-        train_set = pickle.load(f)
-        test_set = pickle.load(f)
-        user_side_features = pickle.load(f)
-        n_users, n_items = pickle.load(f)
+        u_sens = user_side_features['gender'].astype(np.int32)
+        dataset = BPRTrainLoader(train_set, train_u2i, n_items)
 
-    u_sens = user_side_features['gender'].astype(np.int32)
-    dataset = BPRTrainLoader(train_set, train_u2i, n_items)
+        graph = Graph(n_users, n_items, train_u2i)
+        norm_adj = graph.generate_ori_norm_adj()
 
-    graph = Graph(n_users, n_items, train_u2i)
-    norm_adj = graph.generate_ori_norm_adj()
+        sens_enc = SemiGCN(n_users, n_items, norm_adj,
+                           args.emb_size, 3, args.device,
+                           nb_classes=np.unique(u_sens).shape[0])
+        train_semigcn(sens_enc, u_sens, n_users, device=args.device)
 
-    sens_enc = SemiGCN(n_users, n_items, norm_adj,
-                       args.emb_size, 3, args.device,
-                       nb_classes=np.unique(u_sens).shape[0])
-    train_semigcn(sens_enc, u_sens, n_users, device=args.device)
 
-    
-    fair_ib = FairIB_BPR_Item(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
-    fair_ib.to(args.device)
-    train_unify_mi(sens_enc,fair_ib, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args)
-    sys.stdout = None
+        fair_ib = FairIB_BPR_Item(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
+        fair_ib.to(args.device)
+        train_unify_mi(sens_enc,fair_ib, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args)
+        sys.stdout = None
+
+
+    except Exception as e:
+        print(e)

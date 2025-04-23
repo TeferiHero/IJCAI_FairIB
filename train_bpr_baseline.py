@@ -81,41 +81,44 @@ def train_bprmf_baseline(model, dataset, u_sens, n_users, n_items, train_u2i, te
 
 
 if __name__ == '__main__':
+    try:
+        parser = argparse.ArgumentParser(
+            description='ml_bpr_baseline',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser = argparse.ArgumentParser(
-        description='ml_bpr_baseline',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('--backbone', type=str, default='bpr')
+        parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
+        parser.add_argument('--emb_size', type=int, default=64)
+        parser.add_argument('--lr', type=float, default=0.001)
+        parser.add_argument('--l2_reg', type=float, default=0.001)
+        parser.add_argument('--batch_size', type=int, default=2048)
+        parser.add_argument('--num_workers', type=int, default=6)
+        parser.add_argument('--log_path', type=str, default='logs/bpr_base.txt')
+        parser.add_argument('--param_path', type=str, default='param/bpr_base.pth')
+        parser.add_argument('--num_epochs', type=int, default=100)
+        parser.add_argument('--device', type=str, default='cuda:0')
 
-    parser.add_argument('--backbone', type=str, default='bpr')
-    parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
-    parser.add_argument('--emb_size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--l2_reg', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--num_workers', type=int, default=6)
-    parser.add_argument('--log_path', type=str, default='logs/bpr_base.txt')
-    parser.add_argument('--param_path', type=str, default='param/bpr_base.pth')
-    parser.add_argument('--num_epochs', type=int, default=500)
-    parser.add_argument('--device', type=str, default='cuda:0')
+        args = parser.parse_args()
 
-    args = parser.parse_args()
+        sys.stdout = Logger(args.log_path)
+        print(args)
 
-    sys.stdout = Logger(args.log_path)
-    print(args)
+        with open(args.dataset, 'rb') as f:
+            train_u2i = pickle.load(f)
+            train_i2u = pickle.load(f)
+            test_u2i = pickle.load(f)
+            test_i2u = pickle.load(f)
+            train_set = pickle.load(f)
+            test_set = pickle.load(f)
+            user_side_features = pickle.load(f)
+            n_users, n_items = pickle.load(f)
 
-    with open(args.dataset, 'rb') as f:
-        train_u2i = pickle.load(f)
-        train_i2u = pickle.load(f)
-        test_u2i = pickle.load(f)
-        test_i2u = pickle.load(f)
-        train_set = pickle.load(f)
-        test_set = pickle.load(f)
-        user_side_features = pickle.load(f)
-        n_users, n_items = pickle.load(f)
+        bprmf = BPRMF(n_users, n_items, args.emb_size, device=args.device)
+        u_sens = user_side_features['gender'].astype(np.int32)
+        dataset = BPRTrainLoader(train_set, train_u2i, n_items)
 
-    bprmf = BPRMF(n_users, n_items, args.emb_size, device=args.device)
-    u_sens = user_side_features['gender'].astype(np.int32)
-    dataset = BPRTrainLoader(train_set, train_u2i, n_items)
+        train_bprmf_baseline(bprmf, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args)
+        sys.stdout = None
 
-    train_bprmf_baseline(bprmf, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args)
-    sys.stdout = None
+    except Exception as e:
+        print(e)

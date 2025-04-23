@@ -59,7 +59,7 @@ def train_gcn_baseline(model, dataset, u_sens,u_sens_age, n_users, n_items, trai
         print(training_logs)
 
         with torch.no_grad():
-            t_user_emb, t_item_emb = model.forward()
+            t_user_emb, t_item_emb, _, _ = model.forward()
             test_res = ranking_age_evaluate(
                 user_emb=t_user_emb.detach().cpu().numpy(),
                 item_emb=t_item_emb.detach().cpu().numpy(),
@@ -83,49 +83,57 @@ def train_gcn_baseline(model, dataset, u_sens,u_sens_age, n_users, n_items, trai
 
 
 if __name__ == '__main__':
+    try:
+        parser = argparse.ArgumentParser(
+            description='ml_gcn_baseline',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser = argparse.ArgumentParser(
-        description='ml_gcn_baseline',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('--backbone', type=str, default='gcn')
+        parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
+        parser.add_argument('--emb_size', type=int, default=64)
+        parser.add_argument('--lr', type=float, default=0.001)
+        parser.add_argument('--l2_reg', type=float, default=0.001)
+        parser.add_argument('--batch_size', type=int, default=2048)
+        parser.add_argument('--num_workers', type=int, default=6)
+        parser.add_argument('--n_layers', type=int, default=3)
+        parser.add_argument('--log_path', type=str, default='logs/lightgcn_base.txt')
+        parser.add_argument('--param_path', type=str, default='param/gcn_base.pth')
+        parser.add_argument('--num_epochs', type=int, default=100)
+        if sys.platform.startswith("win32"):
+            print("windows")
+            parser.add_argument('--device', type=str, default='cuda:0')
+            # pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+        else:
+            parser.add_argument('--device', type=str, default='cpu')
 
-    parser.add_argument('--backbone', type=str, default='gcn')
-    parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
-    parser.add_argument('--emb_size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--l2_reg', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=2048)
-    parser.add_argument('--num_workers', type=int, default=6)
-    parser.add_argument('--n_layers', type=int, default=3)
-    parser.add_argument('--log_path', type=str, default='logs/lightgcn_base.txt')
-    parser.add_argument('--param_path', type=str, default='param/gcn_base.pth')
-    parser.add_argument('--num_epochs', type=int, default=500)
-    parser.add_argument('--device', type=str, default='cuda:0')
+        args = parser.parse_args()
 
-    args = parser.parse_args()
+        sys.stdout = Logger(args.log_path)
+        print(args)
 
-    sys.stdout = Logger(args.log_path)
-    print(args)
+        with open(args.dataset, 'rb') as f:
+            train_u2i = pickle.load(f)
+            train_i2u = pickle.load(f)
+            test_u2i = pickle.load(f)
+            test_i2u = pickle.load(f)
+            train_set = pickle.load(f)
+            test_set = pickle.load(f)
+            user_side_features = pickle.load(f)
+            n_users, n_items = pickle.load(f)
 
-    with open(args.dataset, 'rb') as f:
-        train_u2i = pickle.load(f)
-        train_i2u = pickle.load(f)
-        test_u2i = pickle.load(f)
-        test_i2u = pickle.load(f)
-        train_set = pickle.load(f)
-        test_set = pickle.load(f)
-        user_side_features = pickle.load(f)
-        n_users, n_items = pickle.load(f)
+        # bprmf = BPRMF(n_users, n_items, args.emb_size, device=args.device)
+        graph = Graph(n_users, n_items, train_u2i)
+        norm_adj = graph.generate_ori_norm_adj()
 
-    # bprmf = BPRMF(n_users, n_items, args.emb_size, device=args.device)
-    graph = Graph(n_users, n_items, train_u2i)
-    norm_adj = graph.generate_ori_norm_adj()
+        gcn = LightGCN(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
 
-    gcn = LightGCN(n_users, n_items, norm_adj, args.emb_size, args.n_layers, args.device)
-    
-    u_sens = user_side_features['gender'].astype(np.int32)
-    u_sens_age = user_side_features['age'].astype(np.int32)
-    u_sens_age = np.where(u_sens_age < 3, 0, 1)
-    dataset = BPRTrainLoader(train_set, train_u2i, n_items)
+        u_sens = user_side_features['gender'].astype(np.int32)
+        u_sens_age = user_side_features['age'].astype(np.int32)
+        u_sens_age = np.where(u_sens_age < 3, 0, 1)
+        dataset = BPRTrainLoader(train_set, train_u2i, n_items)
 
-    train_gcn_baseline(gcn, dataset, u_sens,u_sens_age, n_users, n_items, train_u2i, test_u2i, args)
-    sys.stdout = None
+        train_gcn_baseline(gcn, dataset, u_sens,u_sens_age, n_users, n_items, train_u2i, test_u2i, args)
+        sys.stdout = None
+    except Exception as e:
+        print(e)
+
