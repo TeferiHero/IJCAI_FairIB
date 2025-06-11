@@ -1,8 +1,12 @@
 import pickle
 import os
+
+import numpy as np
 import pandas as pd
 import sklearn.model_selection as sk
 # filename = "lastfm-360k"
+import matplotlib.pyplot as plt
+
 
 
 
@@ -12,6 +16,15 @@ os.makedirs(fileDirPath, mode=0o777, exist_ok=True)
 
 users = pd.read_csv(f'{fileDirPath}/Users.csv', sep=";", dtype={'Age': str})
 users_filtered = users[users['Age'].astype(str).str.isnumeric()].copy()
+users_filtered['Age'] = users_filtered['Age'].astype(int)
+
+# BARRIER = 40 # 2:1
+BARRIER = 32 # 1:1
+# BARRIER = 25 # 1:2
+# BARRIER = 20 # 1:7
+# print(np.median(users_filtered['Age']))
+users_filtered['Age'] = (users_filtered['Age'] > BARRIER).astype(int)
+print(np.unique(users_filtered['Age'], return_counts=True))
 
 df = pd.read_csv(f'{fileDirPath}/Ratings.csv', sep=";", dtype={'User-ID': int, 'ISBN': str})
 recommendations = pd.merge(users_filtered, df, on="User-ID", how="inner")
@@ -63,15 +76,15 @@ n_items = len(books)
 
 print(n_users, n_items)
 
-# with open(f'{fileDirPath}/process.pkl', 'rb') as f:
-    # pickle.dump(train_u2i, f)
-    # pickle.dump(train_i2u, f)
-    # pickle.dump(test_u2i, f)
-    # pickle.dump(test_i2u, f)
-    # pickle.dump(train_set, f) # 'userid': [0,    0, ..., 6039, 6039], 'itemid': [1192,  744, ..., 3181,  299], 'rating':[5, 3, ..., 5, 2]}
-    # pickle.dump(test_set, f)
-    # pickle.dump(user_side_features, f) #dictionary with userid and lists for each feature (age, gender,occ,f)
-    # pickle.dump((n_users, n_items), f) # number of users and number of items
+with open(f'{fileDirPath}/process.pkl', 'wb') as f:
+    pickle.dump(train_u2i, f)
+    pickle.dump(train_i2u, f)
+    pickle.dump(test_u2i, f)
+    pickle.dump(test_i2u, f)
+    pickle.dump(train_set, f) # 'userid': [0,    0, ..., 6039, 6039], 'itemid': [1192,  744, ..., 3181,  299], 'rating':[5, 3, ..., 5, 2]}
+    pickle.dump(test_set, f)
+    pickle.dump(user_side_features, f) #dictionary with userid and lists for each feature (age, gender,occ,f)
+    pickle.dump((n_users, n_items), f) # number of users and number of items
 
 def getvalues(data):
     count = 0
@@ -99,4 +112,4 @@ def printFeatures(user_side_features):
         print(i)
 
 
-printFeatures(user_side_features)
+# printFeatures(user_side_features)
