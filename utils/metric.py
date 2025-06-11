@@ -21,6 +21,8 @@ def mrr(ranked_list, ground_list):
 
 def recall(ranked_list, ground_list):
     hits = 0
+    if len(ground_list) == 0:
+        return 0
     for i in range(len(ranked_list)):
         id = ranked_list[i]
         if id in ground_list:
@@ -41,6 +43,8 @@ def precision(ranked_list, ground_list):
 def ndcg(ranked_list, ground_truth):
     dcg = 0
     idcg = IDCG(len(ground_truth))
+    if idcg == 0:
+        return 0
     for i in range(len(ranked_list)):
         id = ranked_list[i]
         if id not in ground_truth:

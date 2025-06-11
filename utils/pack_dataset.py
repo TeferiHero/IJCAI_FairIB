@@ -10,6 +10,7 @@ import sklearn.model_selection as sk
 
 
 if __name__ == '__main__':
+    filename_mod = "-1to24"
     filename = "gender-bias"
     fileDirPath = f"../data/{filename}/process"
     os.makedirs(fileDirPath, mode=0o777, exist_ok=True)
@@ -19,12 +20,25 @@ if __name__ == '__main__':
     users_filtered['Age'] = users_filtered['Age'].astype(int)
 
     # BARRIER = 40 # 2:1
-    BARRIER = 32 # 1:1
+    # BARRIER = 32 # 1:1
     # BARRIER = 25 # 1:2
-    # BARRIER = 20 # 1:7
-    # print(np.median(users_filtered['Age']))
+    # BARRIER = 22 # 1:4
+    # BARRIER = 20 # 1:6
+    # BARRIER = 18 # 1:10
+    BARRIER = 15 # 1:24
+
+
+    # for i in range(10, 20):
+    #     print(i)
+    #     _, counts = np.unique((users_filtered['Age'] > i).astype(int), return_counts=True)
+    #     print(counts[1]/counts[0])
+    #     print(counts)
+    #
+    # # print(np.median(users_filtered['Age']))
+    # quit()
     users_filtered['Age'] = (users_filtered['Age'] > BARRIER).astype(int)
-    print(np.unique(users_filtered['Age'], return_counts=True))
+
+
 
     users_filtered['User-ID-converted'], _ = pd.factorize(users_filtered['User-ID'])
 
@@ -33,6 +47,9 @@ if __name__ == '__main__':
 
     recommendations['ISBN'], _ = pd.factorize(recommendations['ISBN'])
     recommendations['User-ID'] = recommendations['User-ID-converted']
+    users_filtered['User-ID'] = users_filtered['User-ID-converted']
+
+    users_filtered = users_filtered.drop(columns=['User-ID-converted'])
     recommendations = recommendations.drop(columns=['Age', 'User-ID-converted'], errors='ignore')
 
 
@@ -46,10 +63,10 @@ if __name__ == '__main__':
     users_filtered = users_filtered[users_filtered['User-ID'].isin(valid_users)]
 
     recommendations['ISBN'], _ = pd.factorize(recommendations['ISBN'])
-    users_filtered['User-ID-converted'], _ = pd.factorize(users_filtered['User-ID'])
+    users_filtered['User-ID-converted2'], _ = pd.factorize(users_filtered['User-ID'])
 
-    recommendations['User-ID'] = recommendations['User-ID'].map(users_filtered.set_index('User-ID')['User-ID-converted'])
-    users_filtered['User-ID'] = users_filtered['User-ID-converted']
+    recommendations['User-ID'] = recommendations['User-ID'].map(users_filtered.set_index('User-ID')['User-ID-converted2'])
+    users_filtered['User-ID'] = users_filtered['User-ID-converted2']
 
     train, test = sk.train_test_split(recommendations, test_size=0.2, random_state=42)
 
@@ -79,18 +96,18 @@ if __name__ == '__main__':
 
     train_set = {
         'userid': np.array(train['User-ID']),
-        'itemid': np.array(train['ISBN'].tolist()),
-        'rating': np.array(train['Rating'].tolist())
+        'itemid': np.array(train['ISBN']),
+        'rating': np.array(train['Rating'])
     }
     test_set = {
-        'userid': np.array(test['User-ID'].tolist()),
-        'itemid': np.array(test['ISBN'].tolist()),
-        'rating': np.array(test['Rating'].tolist())
+        'userid': np.array(test['User-ID']),
+        'itemid': np.array(test['ISBN']),
+        'rating': np.array(test['Rating'])
     }
 
     user_side_features = {
-        'userid': np.array(users_filtered['User-ID'].tolist()),
-        'age': np.array(users_filtered['Age'].tolist())
+        'userid': np.array(users_filtered['User-ID']),
+        'age': np.array(users_filtered['Age'])
     }
 
     # books = pd.read_csv(f'{fileDirPath}/Books.csv', sep=";", dtype={'ISBN': str})
@@ -99,7 +116,15 @@ if __name__ == '__main__':
     n_items = max(recommendations['ISBN']) + 1
     print(n_users, n_items)
 
-    with open(f'{fileDirPath}/process.pkl', 'wb') as f:
+    for i in range(n_users):
+        train_u2i.setdefault(i, [])
+        test_u2i.setdefault(i, [])
+
+    for i in range(n_items):
+        train_i2u.setdefault(i, [])
+        test_i2u.setdefault(i, [])
+
+    with open(f'{fileDirPath}/process{filename_mod}.pkl', 'wb') as f:
         pickle.dump(train_u2i, f)
         pickle.dump(train_i2u, f)
         pickle.dump(test_u2i, f)

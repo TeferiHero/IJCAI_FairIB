@@ -89,8 +89,8 @@ if __name__ == '__main__':
 
 
 
-        data_name="ml-1m"
-        # data_name="gender-bias"
+        # data_name="ml-1m"
+        data_name="gender-bias"
         parser.add_argument('--backbone', type=str, default='bpr')
         parser.add_argument('--dataset', type=str, default=f'./data/{data_name}/process/process.pkl')
         parser.add_argument('--emb_size', type=int, default=64)
@@ -111,10 +111,9 @@ if __name__ == '__main__':
         import datetime
         a = datetime.datetime.now()
         time_str = datetime.datetime.strftime(a, "%m-%d %H%M")
-        pre_dex = "beta=" + str(args.beta) + "_gamma=" + str(args.gamma)+ "_sigma=" + str(args.sigma)
-        args.log_path = args.log_path + pre_dex + " " + time_str + ".txt"
+        args.log_path = args.log_path + " " + time_str + ".txt"
         sys.stdout = Logger(args.log_path)
-        args.param_path = args.param_path + pre_dex + " " + time_str + ".pth"
+        args.param_path = args.param_path + " " + time_str + ".pth"
 
 
 

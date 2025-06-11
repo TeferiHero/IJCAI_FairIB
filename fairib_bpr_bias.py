@@ -148,7 +148,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 if __name__ == '__main__':
-    try:
+    # try:
         parser = argparse.ArgumentParser(
             description='ml_bpr_fairib',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -217,6 +217,6 @@ if __name__ == '__main__':
         sys.stdout = None
 
 
-    except Exception as e:
-        # print(e)
-        raise e
+    # except Exception as e:
+    #     # print(e)
+    #     raise e
