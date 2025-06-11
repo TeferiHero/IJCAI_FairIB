@@ -94,6 +94,7 @@ if __name__ == '__main__':
         parser.add_argument('--lr', type=float, default=0.001)
         parser.add_argument('--l2_reg', type=float, default=0.001)
         parser.add_argument('--batch_size', type=int, default=2048)
+
         parser.add_argument('--num_workers', type=int, default=6)
         parser.add_argument('--n_layers', type=int, default=3)
         parser.add_argument('--log_path', type=str, default='logs/lightgcn_base.txt')

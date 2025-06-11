@@ -24,8 +24,9 @@ import sys
 
 def train_bprmf_baseline(model, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args):
     optimizer_G = optim.Adam(model.parameters(), lr=args.lr)
-    train_loader = DataLoader(dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
+    # train_loader = DataLoader(dataset, shuffle=True, batch_size=args.batch_size, num_workers=args.num_workers)
 
+    train_loader = DataLoader(dataset, shuffle=False, batch_size=args.batch_size, num_workers=args.num_workers)
     best_perf = 0.0
     for epoch in range(args.num_epochs):
         train_res = {
@@ -33,9 +34,9 @@ def train_bprmf_baseline(model, dataset, u_sens, n_users, n_items, train_u2i, te
             'emb_loss': 0.0,
         }
         for uij in train_loader:
-            u = uij[0].type(torch.long).to(args.device)
-            i = uij[1].type(torch.long).to(args.device)
-            j = uij[2].type(torch.long).to(args.device)
+            u = uij[0].type(torch.long).to(args.device) # train_set
+            i = uij[1].type(torch.long).to(args.device) # train_u2i
+            j = uij[2].type(torch.long).to(args.device) # 1:
 
             main_user_emb, main_item_emb = model.forward()
             bpr_loss, emb_loss = calc_bpr_loss(main_user_emb, main_item_emb, u, i, j)
@@ -86,19 +87,36 @@ if __name__ == '__main__':
             description='ml_bpr_baseline',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+
+
+        data_name="ml-1m"
+        # data_name="gender-bias"
         parser.add_argument('--backbone', type=str, default='bpr')
-        parser.add_argument('--dataset', type=str, default='./data/ml-1m/process/process.pkl')
+        parser.add_argument('--dataset', type=str, default=f'./data/{data_name}/process/process.pkl')
         parser.add_argument('--emb_size', type=int, default=64)
         parser.add_argument('--lr', type=float, default=0.001)
         parser.add_argument('--l2_reg', type=float, default=0.001)
         parser.add_argument('--batch_size', type=int, default=2048)
+        # parser.add_argument('--batch_size', type=int, default=1)
+
         parser.add_argument('--num_workers', type=int, default=6)
-        parser.add_argument('--log_path', type=str, default='logs/bpr_base.txt')
+        parser.add_argument('--log_path', type=str, default='logs/bpr_base_gender-bias.txt')
         parser.add_argument('--param_path', type=str, default='param/bpr_base.pth')
         parser.add_argument('--num_epochs', type=int, default=100)
-        parser.add_argument('--device', type=str, default='cuda:0')
+        parser.add_argument('--device', type=str, default='cpu:0')
 
         args = parser.parse_args()
+
+
+        import datetime
+        a = datetime.datetime.now()
+        time_str = datetime.datetime.strftime(a, "%m-%d %H%M")
+        pre_dex = "beta=" + str(args.beta) + "_gamma=" + str(args.gamma)+ "_sigma=" + str(args.sigma)
+        args.log_path = args.log_path + pre_dex + " " + time_str + ".txt"
+        sys.stdout = Logger(args.log_path)
+        args.param_path = args.param_path + pre_dex + " " + time_str + ".pth"
+
+
 
         sys.stdout = Logger(args.log_path)
         print(args)
@@ -114,11 +132,12 @@ if __name__ == '__main__':
             n_users, n_items = pickle.load(f)
 
         bprmf = BPRMF(n_users, n_items, args.emb_size, device=args.device)
-        u_sens = user_side_features['gender'].astype(np.int32)
+        u_sens = user_side_features['age'].astype(np.int32)
         dataset = BPRTrainLoader(train_set, train_u2i, n_items)
 
         train_bprmf_baseline(bprmf, dataset, u_sens, n_users, n_items, train_u2i, test_u2i, args)
         sys.stdout = None
 
     except Exception as e:
-        print(e)
+        # print(e)
+        raise e
